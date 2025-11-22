@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Mi Universo Eres Tú</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; }
+        #info {
+            position: absolute; top: 15%; width: 100%; text-align: center;
+            pointer-events: none; z-index: 1; font-family: 'Segoe UI', sans-serif;
+            color: white; font-size: 1rem; text-transform: uppercase; letter-spacing: 2px;
+            text-shadow: 0 0 10px #fff; opacity: 0.9;
+        }
+        #modal {
+            display: none; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            /* Fondo del modal más bonito y borroso */
+            background: rgba(20, 20, 35, 0.8);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            padding: 25px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center; width: 85%; max-width: 350px;
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.8); z-index: 100;
+        }
+        #modal img { width: 100%; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #modal p { font-size: 1.2rem; color: #eee; margin-bottom: 25px; font-style: italic; font-weight: 300; }
+        #closeBtn {
+            background: white; color: black; border: none; padding: 10px 30px;
+            border-radius: 50px; cursor: pointer; font-weight: bold; font-size: 1rem;
+            transition: transform 0.2s;
+        }
+        #closeBtn:hover { transform: scale(1.05); }
+    </style>
+</head>
+<body>
+
+    <div id="info">Toca los planetas... y también el Sol ☀️</div>
+
+    <div id="modal">
+        <img id="modal-img" src="" alt="Foto">
+        <p id="modal-text"></p>
+        <button id="closeBtn">Seguir explorando</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // --- INICIO CONFIGURACIÓN ---
+        const scene = new THREE.Scene();
+        // Eliminamos el color de fondo plano y la niebla simple
+        
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
+        
+        // Ajuste de cámara para celular
+        if (window.innerWidth < 600) {
+            camera.position.set(0, 80, 160); 
+        } else {
+            camera.position.set(0, 60, 120);
+        }
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        // Importante para que las texturas se vean bien
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        // Rotación automática lenta para que el fondo se mueva
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.3; 
+
+        const loader = new THREE.TextureLoader();
+        loader.setCrossOrigin('anonymous');
+
+        // --- NUEVO FONDO ESPECTACULAR ---
+        // Creamos una esfera gigante que envuelve todo
+        const bgGeometry = new THREE.SphereGeometry(1000, 64, 64);
+        // Cargamos una textura de galaxia de alta calidad
+        const bgTexture = loader.load('https://i.imgur.com/JpxgUq0.jpg'); 
+        const bgMaterial = new THREE.MeshBasicMaterial({
+            map: bgTexture,
+            side: THREE.BackSide, // La imagen se ve por dentro de la esfera
+            transparent: true,
+            opacity: 0.7 // Un poco transparente para dar profundidad
+        });
+        const backgroundSphere = new THREE.Mesh(bgGeometry, bgMaterial);
+        scene.add(backgroundSphere);
+
+
+        // --- ILUMINACIÓN ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); 
+        scene.add(ambientLight);
+        const sunLight = new THREE.PointLight(0xffaa00, 2.5, 500);
+        sunLight.position.set(0, 0, 0);
+        scene.add(sunLight);
+
+        // --- EL SOL (CON LINK A YOUTUBE) ---
+        const sunGeo = new THREE.SphereGeometry(12, 32, 32);
+        const sunMat = new THREE.MeshBasicMaterial({ color: 0xffdd55 });
+        const sun = new THREE.Mesh(sunGeo, sunMat);
+        
+        // ---> ¡PEGA TU LINK DE YOUTUBE AQUÍ ABAJO! <---
+        sun.userData = { 
+            isSun: true, 
+            link: "https://youtu.be/Apaf4V6V668?si=-zBn5OLX5Kq4-Osk" 
+        };
+        scene.add(sun);
+
+        // Resplandor del Sol más bonito
+        const glowTexture = loader.load('https://threejs.org/examples/textures/sprites/glow.png');
+        const sunGlowMat = new THREE.SpriteMaterial({ 
+            map: glowTexture, 
+            color: 0xffaa00, 
+            transparent: true, 
+            blending: THREE.AdditiveBlending, 
+            opacity: 0.9 
+        });
+        const sunGlow = new THREE.Sprite(sunGlowMat);
+        sunGlow.scale.set(40, 40, 1); // Resplandor grande
+        sun.add(sunGlow);
+
+
+        // --- TUS PLANETAS Y FRASES (Revisa que tus fotos estén bien) ---
+        const planetsData = [
+            { name: "Mercurio", color: 0xAAAAAA, size: 4.0, dist: 30, img: 'foto1.jpg', msg: "Te amo demasiado mi niña" },
+            { name: "Venus",    color: 0xFFCC88, size: 4.5, dist: 45, img: 'foto2.jpg', msg: "Me haces demasiado feliz mi bb" },
+            { name: "Tierra",   color: 0x2255FF, size: 4.8, dist: 65, img: 'foto3.jpg', msg: "Soy tuyoooo bb, completamente tuyo" },
+            { name: "Marte",    color: 0xFF4422, size: 4.2, dist: 85, img: 'foto4.jpg', msg: "Dare todo de mi por ti mi bb" },
+            { name: "Júpiter",  color: 0xCC9966, size: 9.0, dist: 120, img: 'foto5.jpg', msg: "Me encantas mi celosa" },
+            { name: "Saturno",  color: 0xEEDD88, size: 7.5, dist: 155, ring: true, img: 'foto6.jpg', msg: "Sin ti mi vida seria miserable" },
+            { name: "Urano",    color: 0x44FFFF, size: 6.0, dist: 190, img: 'foto7.jpg', msg: "Siempre estare para ti mi niña" },
+            { name: "Neptuno",  color: 0x3344CC, size: 6.0, dist: 220, img: 'foto8.jpg', msg: "Quiero que nuestro amor dure por siempre" }
+        ];
+
+        const planets = [];
+
+        planetsData.forEach(data => {
+            const group = new THREE.Group();
+            // Material tipo "cristal pulido"
+            const material = new THREE.MeshPhysicalMaterial({
+                color: data.color, metalness: 0.3, roughness: 0.2, clearcoat: 1.0, clearcoatRoughness: 0.1
+            });
+            const mesh = new THREE.Mesh(new THREE.SphereGeometry(data.size, 32, 32), material);
+            mesh.userData = { img: data.img, msg: data.msg, isPlanet: true };
+            group.add(mesh);
+
+            if(data.ring) {
+                const ring = new THREE.Mesh(
+                    new THREE.RingGeometry(data.size*1.4, data.size*2.2, 64),
+                    new THREE.MeshBasicMaterial({ color: 0xCCBB99, side: THREE.DoubleSide, transparent: true, opacity: 0.5 })
+                );
+                ring.rotation.x = Math.PI/2;
+                ring.userData = mesh.userData;
+                group.add(ring);
+            }
+
+            const orbit = new THREE.Mesh(
+                new THREE.RingGeometry(data.dist-0.3, data.dist+0.3, 128),
+                new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, opacity: 0.08, transparent: true })
+            );
+            orbit.rotation.x = Math.PI/2;
+            scene.add(orbit);
+
+            scene.add(group);
+            planets.push({ group: group, mesh: mesh, dist: data.dist, angle: Math.random()*10, speed: 0.002 });
+        });
+
+        // --- LÓGICA DE INTERACCIÓN ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const modal = document.getElementById('modal');
+        const modalImg = document.getElementById('modal-img');
+        const modalText = document.getElementById('modal-text');
+        const closeBtn = document.getElementById('closeBtn');
+        let isPaused = false;
+
+        function onInteract(event) {
+            if (isPaused && event.target.id !== 'closeBtn') return;
+            let x = event.changedTouches ? event.changedTouches[0].clientX : event.clientX;
+            let y = event.changedTouches ? event.changedTouches[0].clientY : event.clientY;
+            
+            mouse.x = (x / window.innerWidth) * 2 - 1;
+            mouse.y = -(y / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(scene.children, true);
+
+            for (let i = 0; i < intersects.length; i++) {
+                const data = intersects[i].object.userData;
+                if (data.isSun) {
+                    window.open(data.link, '_blank');
+                    break;
+                }
+                if (data.isPlanet) {
+                    showModal(data);
+                    break;
+                }
+            }
+        }
+
+        window.addEventListener('touchstart', onInteract, {passive: false});
+        window.addEventListener('click', onInteract);
+
+        function showModal(data) {
+            isPaused = true;
+            controls.autoRotate = false; // Detener rotación al abrir
+            modalImg.src = data.img;
+            modalText.textContent = data.msg;
+            modal.style.display = 'block';
+        }
+
+        closeBtn.addEventListener('click', () => {
+            isPaused = false;
+            controls.autoRotate = true; // Reanudar rotación al cerrar
+            modal.style.display = 'none';
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            if (!isPaused) {
+                // Rotar el fondo muy lentamente para dar vida
+                backgroundSphere.rotation.y += 0.0003; 
+                planets.forEach(p => {
+                    p.angle += p.speed;
+                    p.group.position.x = Math.cos(p.angle) * p.dist;
+                    p.group.position.z = Math.sin(p.angle) * p.dist;
+                    p.mesh.rotation.y += 0.01;
+                });
+            }
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
